@@ -5,7 +5,7 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchReviewComments, fetchThread } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchReviewComments, fetchThread } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
@@ -14,6 +14,9 @@ import {
 	renderImagesListMarkdown,
 	renderIssuesListMarkdown,
 	renderParticipantsMarkdown,
+	renderPrChecksMarkdown,
+	renderPrCommitMarkdown,
+	renderPrCommitsMarkdown,
 	renderPrsListMarkdown,
 	renderReviewCommentsMarkdown,
 } from "./renderers/lists";
@@ -158,6 +161,29 @@ export default function githubExtension(pi: ExtensionAPI) {
 					}
 					const changes = await fetchPrChanges(client, owner, repo, id);
 					const text = renderChangesListMarkdown(owner, repo, id, changes);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "list_pr_commits") {
+					if (entity !== "pr") {
+						return { content: [{ type: "text", text: "Error: action=list_pr_commits only works for pull requests" }] };
+					}
+					const commits = await fetchPrCommits(client, owner, repo, id);
+					const start = (normalizedPage - 1) * normalizedPerPage;
+					const text = renderPrCommitsMarkdown(owner, repo, id, commits.slice(start, start + normalizedPerPage));
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "get_pr_commit") {
+					if (entity !== "pr") {
+						return { content: [{ type: "text", text: "Error: action=get_pr_commit only works for pull requests" }] };
+					}
+					const commitSha = typeof rawParams.commitSha === "string" ? rawParams.commitSha.trim() : "";
+					if (!commitSha) {
+						return { content: [{ type: "text", text: "Error: commitSha is required for action=get_pr_commit" }] };
+					}
+					const commit = await fetchPrCommitDetail(client, owner, repo, id, commitSha);
+					const text = renderPrCommitMarkdown(owner, repo, id, commit);
 					return { content: [{ type: "text", text }] };
 				}
 

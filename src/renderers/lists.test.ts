@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { renderReviewCommentsMarkdown } from "./lists";
+import { renderPrCommitMarkdown, renderPrCommitsMarkdown, renderReviewCommentsMarkdown } from "./lists";
 
 describe("renderReviewCommentsMarkdown", () => {
 	it("renders compact review comments", () => {
@@ -18,5 +18,29 @@ describe("renderReviewCommentsMarkdown", () => {
 		expect(text).toContain("# Review comments for PR o/r#12");
 		expect(text).toContain("@alice");
 		expect(text).toContain("src/a.ts:10");
+	});
+});
+
+describe("renderPrCommitsMarkdown", () => {
+	it("renders commit lines", () => {
+		const text = renderPrCommitsMarkdown("o", "r", 1, [
+			{ sha: "abcdef1234", author: "alice", date: "2025-01-01T00:00:00Z", message: "feat: add x", url: "https://x" },
+		]);
+		expect(text).toContain("# Commits for PR o/r#1");
+		expect(text).toContain("abcdef1");
+	});
+});
+
+describe("renderPrCommitMarkdown", () => {
+	it("renders commit diff details", () => {
+		const text = renderPrCommitMarkdown("o", "r", 1, {
+			sha: "abcdef1234",
+			author: "alice",
+			date: "2025-01-01T00:00:00Z",
+			message: "feat: add x",
+			changes: [{ filename: "a.ts", status: "modified", additions: 1, deletions: 0, changes: 1, patch: "+x" }],
+		});
+		expect(text).toContain("# Commit abcdef1 for PR o/r#1");
+		expect(text).toContain("```diff");
 	});
 });

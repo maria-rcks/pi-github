@@ -1,4 +1,4 @@
-import type { ChangeRef, Entity, ReviewCommentRef, ThreadItem } from "../types";
+import type { ChangeRef, Entity, PrCommitDetail, PrCommitRef, PrCheckRef, ReviewCommentRef, ThreadItem } from "../types";
 import { safeIso, trimBody } from "../utils/text";
 import type { GitHubClient } from "./client";
 
@@ -198,6 +198,62 @@ export async function fetchPrChanges(client: GitHubClient, owner: string, repo: 
 		blobUrl: typeof file.blob_url === "string" ? file.blob_url : undefined,
 		rawUrl: typeof file.raw_url === "string" ? file.raw_url : undefined,
 		previousFilename: typeof file.previous_filename === "string" ? file.previous_filename : undefined,
+	}));
+}
+
+export async function fetchPrCommits(client: GitHubClient, owner: string, repo: string, number: number): Promise<PrCommitRef[]> {
+	const commits = await client.fetchAllRestPages(`/repos/${owner}/${repo}/pulls/${number}/commits`);
+	return commits.map((commit) => ({
+		sha: String(commit.sha ?? ""),
+		author: String(commit.author?.login ?? commit.commit?.author?.name ?? "unknown"),
+		date: safeIso(commit.commit?.author?.date),
+		message: String(commit.commit?.message ?? "").split("\n")[0]?.trim() ?? "",
+		url: typeof commit.html_url === "string" ? commit.html_url : undefined,
+	}));
+}
+
+export async function fetchPrCommitDetail(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	number: number,
+	commitSha: string,
+): Promise<PrCommitDetail> {
+	const commits = await fetchPrCommits(client, owner, repo, number);
+	const match = commits.find((commit) => commit.sha === commitSha || commit.sha.startsWith(commitSha));
+	if (!match) {
+		throw new Error(`commitSha ${commitSha} not found in PR #${number}`);
+	}
+
+	const payload = await client.ghJson(["api", `/repos/${owner}/${repo}/commits/${match.sha}`]);
+	const files = Array.isArray(payload?.files) ? payload.files : [];
+	return {
+		sha: match.sha,
+		author: String(payload?.author?.login ?? payload?.commit?.author?.name ?? match.author),
+		date: safeIso(payload?.commit?.author?.date ?? match.date),
+		message: String(payload?.commit?.message ?? match.message).trim(),
+		url: typeof payload?.html_url === "string" ? payload.html_url : match.url,
+		changes: files.map((file: any) => ({
+			filename: String(file.filename ?? "unknown"),
+			status: String(file.status ?? "modified"),
+			additions: Number(file.additions ?? 0),
+			deletions: Number(file.deletions ?? 0),
+			changes: Number(file.changes ?? 0),
+			patch: typeof file.patch === "string" ? file.patch : undefined,
+		})),
+	};
+}
+
+export async function fetchPrChecks(client: GitHubClient, owner: string, repo: string, headSha: string): Promise<PrCheckRef[]> {
+	const checks = await client.ghJson(["api", `/repos/${owner}/${repo}/commits/${headSha}/check-runs`]);
+	const runs = Array.isArray(checks?.check_runs) ? checks.check_runs : [];
+	return runs.map((run) => ({
+		name: String(run.name ?? "unknown"),
+		status: String(run.status ?? "unknown"),
+		conclusion: typeof run.conclusion === "string" ? run.conclusion : undefined,
+		startedAt: safeIso(run.started_at),
+		completedAt: safeIso(run.completed_at),
+		url: typeof run.html_url === "string" ? run.html_url : undefined,
 	}));
 }
 

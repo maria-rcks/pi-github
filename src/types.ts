@@ -78,6 +78,15 @@ export type PrCheckRef = {
 	url?: string;
 };
 
+export type PrCommitDetail = {
+	sha: string;
+	author: string;
+	date: string;
+	message: string;
+	url?: string;
+	changes: PrCommitChange[];
+};
+
 export type ParticipantRef = {
 	login: string;
 	roles: Array<"author" | "reviewer" | "commenter">;
