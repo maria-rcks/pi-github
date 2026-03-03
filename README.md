@@ -34,6 +34,8 @@ pi install /absolute/path/to/pi-github
 - Lists open issues and pull requests with pagination support.
 - Extracts image references and downloads a selected image by ID.
 - Lists PR changed files and fetches per-file diffs.
+- Provides PR workflow helpers (overview, checks, commits, review comments, participants).
+- Adds remote repository read/search utilities (file read, directory list, code/commit search, glob files).
 
 ## Tool actions
 
@@ -53,6 +55,11 @@ Tool name: `github`
 - `get_pr_commit` (PR only, requires `commitSha`)
 - `list_pr_checks` (PR only)
 - `pr_overview` (PR only, optional `includeFiles`/`includeReviews`/`includeChecks`)
+- `read_file` (repo file content with optional `startLine`/`endLine`/`ref`)
+- `list_directory` (repo directory entries with optional `ref`)
+- `search_code` (repo code search with optional `path`)
+- `glob_files` (repo tree glob filter with `filePattern`, optional `offset`/`limit`/`ref`)
+- `search_commits` (repo commit search using `query` and optional `author`/`since`/`until`)
 
 Core params:
 
