@@ -393,6 +393,18 @@ export async function searchRepoCode(
 	}));
 }
 
+export async function fetchRepoTreeFiles(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	ref?: string,
+): Promise<string[]> {
+	const targetRef = ref?.trim() || "HEAD";
+	const payload = await client.ghJson(["api", `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(targetRef)}?recursive=1`]);
+	const tree = Array.isArray(payload?.tree) ? payload.tree : [];
+	return tree.filter((item) => item?.type === "blob").map((item) => String(item.path ?? ""));
+}
+
 export async function fetchThread(
 	client: GitHubClient,
 	entity: Entity,

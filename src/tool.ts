@@ -5,7 +5,7 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments, fetchThread, searchRepoCode } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchRepoTreeFiles, fetchReviewComments, fetchThread, searchRepoCode } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
@@ -15,6 +15,7 @@ import {
 	renderCodeSearchMarkdown,
 	renderDirectoryMarkdown,
 	renderFileMarkdown,
+	renderGlobMarkdown,
 	renderIssuesListMarkdown,
 	renderParticipantsMarkdown,
 	renderPrChecksMarkdown,
@@ -25,6 +26,7 @@ import {
 	renderReviewCommentsMarkdown,
 } from "./renderers/lists";
 import { applyThreadFilters } from "./utils/filters";
+import { globMatch } from "./utils/glob";
 import { collectImages, imageExtFromUrl } from "./utils/images";
 import { collectParticipants } from "./utils/participants";
 
@@ -144,6 +146,25 @@ export default function githubExtension(pi: ExtensionAPI) {
 					const path = typeof rawParams.path === "string" && rawParams.path.trim() ? rawParams.path.trim() : undefined;
 					const results = await searchRepoCode(client, owner, repo, query, path, normalizedPage, normalizedPerPage);
 					const text = renderCodeSearchMarkdown(owner, repo, query, results);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "glob_files") {
+					const filePattern = typeof rawParams.filePattern === "string" ? rawParams.filePattern.trim() : "";
+					if (!filePattern) {
+						return { content: [{ type: "text", text: "Error: filePattern is required for action=glob_files" }] };
+					}
+					const files = await fetchRepoTreeFiles(
+						client,
+						owner,
+						repo,
+						typeof rawParams.ref === "string" && rawParams.ref.trim() ? rawParams.ref.trim() : undefined,
+					);
+					const matched = globMatch(files, filePattern);
+					const offset = Math.max(0, Number(rawParams.offset ?? 0));
+					const limit = rawParams.limit === undefined ? matched.length : Math.max(1, Number(rawParams.limit));
+					const pageItems = matched.slice(offset, offset + limit);
+					const text = renderGlobMarkdown(owner, repo, filePattern, pageItems, matched.length);
 					return { content: [{ type: "text", text }] };
 				}
 

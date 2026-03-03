@@ -190,6 +190,25 @@ export function renderPrChecksMarkdown(owner: string, repo: string, number: numb
 	return lines.join("\n");
 }
 
+export function renderGlobMarkdown(owner: string, repo: string, pattern: string, files: string[], total: number): string {
+	const lines: string[] = [];
+	lines.push("---");
+	lines.push(`repo: ${owner}/${repo}`);
+	lines.push(`pattern: ${pattern}`);
+	lines.push(`results: ${files.length}`);
+	lines.push(`total_matches: ${total}`);
+	lines.push("---");
+	lines.push("");
+	lines.push(`# Glob results for ${owner}/${repo}`);
+	lines.push("");
+	if (files.length === 0) {
+		lines.push("No files matched.");
+	} else {
+		for (const file of files) lines.push(`- ${file}`);
+	}
+	return lines.join("\n");
+}
+
 export function renderCodeSearchMarkdown(
 	owner: string,
 	repo: string,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments, searchRepoCode } from "./fetchers";
+import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchRepoTreeFiles, fetchReviewComments, searchRepoCode } from "./fetchers";
 
 function createClient() {
 	const responses: Record<string, unknown> = {
@@ -38,6 +38,13 @@ function createClient() {
 			{ name: "utils", type: "dir", path: "src/utils" },
 			{ name: "index.ts", type: "file", path: "src/index.ts" },
 		],
+		"/repos/o/r/git/trees/HEAD?recursive=1": {
+			tree: [
+				{ path: "src/a.ts", type: "blob" },
+				{ path: "src/utils", type: "tree" },
+				{ path: "README.md", type: "blob" },
+			],
+		},
 		"/search/code?q=useState%20repo%3Ao%2Fr&page=1&per_page=20": {
 			items: [
 				{
@@ -119,5 +126,11 @@ describe("fetchers", () => {
 		const results = await searchRepoCode(client, "o", "r", "useState");
 		expect(results).toHaveLength(1);
 		expect(results[0]?.path).toBe("src/hooks.ts");
+	});
+
+	it("fetches repository tree files", async () => {
+		const client = createClient() as any;
+		const files = await fetchRepoTreeFiles(client, "o", "r");
+		expect(files).toEqual(["src/a.ts", "README.md"]);
 	});
 });

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { renderCodeSearchMarkdown, renderDirectoryMarkdown, renderFileMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderCodeSearchMarkdown, renderDirectoryMarkdown, renderFileMarkdown, renderGlobMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+
+describe("renderGlobMarkdown", () => {
+	it("renders matched files", () => {
+		const text = renderGlobMarkdown("o", "r", "**/*.ts", ["src/a.ts"], 1);
+		expect(text).toContain("pattern: **/*.ts");
+		expect(text).toContain("- src/a.ts");
+	});
+});
 
 describe("renderCodeSearchMarkdown", () => {
 	it("renders code search rows", () => {
