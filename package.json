@@ -1,6 +1,6 @@
 {
   "name": "pi-github",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "GitHub tool extension for Pi: format threads, list issues/PRs, and inspect PR diffs/images.",
   "author": "Maria <maria@kuuro.net>",
   "license": "MIT",
