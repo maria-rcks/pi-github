@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchRepoTreeFiles, fetchReviewComments, searchRepoCode } from "./fetchers";
+import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchRepoTreeFiles, fetchReviewComments, searchRepoCode, searchRepoCommits } from "./fetchers";
 
 function createClient() {
 	const responses: Record<string, unknown> = {
@@ -43,6 +43,15 @@ function createClient() {
 				{ path: "src/a.ts", type: "blob" },
 				{ path: "src/utils", type: "tree" },
 				{ path: "README.md", type: "blob" },
+			],
+		},
+		"/search/commits?q=fix%20repo%3Ao%2Fr&page=1&per_page=20": {
+			items: [
+				{
+					sha: "def987654321",
+					html_url: "https://github.com/o/r/commit/def987654321",
+					commit: { message: "fix: bug\n\nbody", author: { name: "Bob", date: "2025-01-05T00:00:00Z" } },
+				},
 			],
 		},
 		"/search/code?q=useState%20repo%3Ao%2Fr&page=1&per_page=20": {
@@ -132,5 +141,12 @@ describe("fetchers", () => {
 		const client = createClient() as any;
 		const files = await fetchRepoTreeFiles(client, "o", "r");
 		expect(files).toEqual(["src/a.ts", "README.md"]);
+	});
+
+	it("searches repository commits", async () => {
+		const client = createClient() as any;
+		const commits = await searchRepoCommits(client, "o", "r", { query: "fix" });
+		expect(commits).toHaveLength(1);
+		expect(commits[0]?.sha).toBe("def987654321");
 	});
 });

@@ -1,5 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import { renderCodeSearchMarkdown, renderDirectoryMarkdown, renderFileMarkdown, renderGlobMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderCodeSearchMarkdown, renderCommitSearchMarkdown, renderDirectoryMarkdown, renderFileMarkdown, renderGlobMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+
+describe("renderCommitSearchMarkdown", () => {
+	it("renders commit search rows", () => {
+		const text = renderCommitSearchMarkdown("o", "r", "fix", [
+			{ sha: "abcdef123", message: "fix bug", author: "alice", date: "2025-01-01T00:00:00Z", url: "https://x" },
+		]);
+		expect(text).toContain("Commit search results for o/r");
+		expect(text).toContain("abcdef1");
+	});
+});
 
 describe("renderGlobMarkdown", () => {
 	it("renders matched files", () => {

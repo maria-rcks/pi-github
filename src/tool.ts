@@ -5,7 +5,7 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchRepoTreeFiles, fetchReviewComments, fetchThread, searchRepoCode } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchRepoTreeFiles, fetchReviewComments, fetchThread, searchRepoCode, searchRepoCommits } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
@@ -13,6 +13,7 @@ import {
 	renderChangesListMarkdown,
 	renderImagesListMarkdown,
 	renderCodeSearchMarkdown,
+	renderCommitSearchMarkdown,
 	renderDirectoryMarkdown,
 	renderFileMarkdown,
 	renderGlobMarkdown,
@@ -165,6 +166,26 @@ export default function githubExtension(pi: ExtensionAPI) {
 					const limit = rawParams.limit === undefined ? matched.length : Math.max(1, Number(rawParams.limit));
 					const pageItems = matched.slice(offset, offset + limit);
 					const text = renderGlobMarkdown(owner, repo, filePattern, pageItems, matched.length);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "search_commits") {
+					const query = typeof rawParams.query === "string" ? rawParams.query.trim() : "";
+					const author = typeof rawParams.author === "string" ? rawParams.author.trim() : "";
+					const since = typeof rawParams.since === "string" ? rawParams.since.trim() : "";
+					const until = typeof rawParams.until === "string" ? rawParams.until.trim() : "";
+					const results = await searchRepoCommits(client, owner, repo, {
+						query: query || undefined,
+						author: author || undefined,
+						since: since || undefined,
+						until: until || undefined,
+						page: normalizedPage,
+						perPage: normalizedPerPage,
+					});
+					const queryLabel = [query || "*", author ? `author:${author}` : "", since ? `since:${since}` : "", until ? `until:${until}` : ""]
+						.filter(Boolean)
+						.join(" ");
+					const text = renderCommitSearchMarkdown(owner, repo, queryLabel, results);
 					return { content: [{ type: "text", text }] };
 				}
 

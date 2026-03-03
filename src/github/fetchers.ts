@@ -405,6 +405,38 @@ export async function fetchRepoTreeFiles(
 	return tree.filter((item) => item?.type === "blob").map((item) => String(item.path ?? ""));
 }
 
+export async function searchRepoCommits(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	params: { query?: string; author?: string; since?: string; until?: string; page?: number; perPage?: number },
+): Promise<Array<{ sha: string; message: string; author: string; date: string; url?: string }>> {
+	const parts: string[] = [];
+	if (params.query?.trim()) parts.push(params.query.trim());
+	parts.push(`repo:${owner}/${repo}`);
+	if (params.author?.trim()) parts.push(`author:${params.author.trim()}`);
+	if (params.since?.trim()) parts.push(`author-date:>=${params.since.trim()}`);
+	if (params.until?.trim()) parts.push(`author-date:<=${params.until.trim()}`);
+	const q = parts.join(" ");
+	const page = Math.max(1, Number(params.page ?? 1));
+	const perPage = Math.max(1, Math.min(100, Number(params.perPage ?? 20)));
+
+	const payload = await client.ghJson([
+		"api",
+		"-H",
+		"Accept: application/vnd.github+json",
+		`/search/commits?q=${encodeURIComponent(q)}&page=${page}&per_page=${perPage}`,
+	]);
+	const items = Array.isArray(payload?.items) ? payload.items : [];
+	return items.map((item) => ({
+		sha: String(item?.sha ?? ""),
+		message: String(item?.commit?.message ?? "").split("\n")[0]?.trim() ?? "",
+		author: String(item?.commit?.author?.name ?? item?.author?.login ?? "unknown"),
+		date: safeIso(item?.commit?.author?.date),
+		url: typeof item?.html_url === "string" ? item.html_url : undefined,
+	}));
+}
+
 export async function fetchThread(
 	client: GitHubClient,
 	entity: Entity,

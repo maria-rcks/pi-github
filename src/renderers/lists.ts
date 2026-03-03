@@ -190,6 +190,31 @@ export function renderPrChecksMarkdown(owner: string, repo: string, number: numb
 	return lines.join("\n");
 }
 
+export function renderCommitSearchMarkdown(
+	owner: string,
+	repo: string,
+	query: string,
+	results: Array<{ sha: string; message: string; author: string; date: string; url?: string }>,
+): string {
+	const lines: string[] = [];
+	lines.push("---");
+	lines.push(`repo: ${owner}/${repo}`);
+	lines.push(`query: ${query}`);
+	lines.push(`results: ${results.length}`);
+	lines.push("---");
+	lines.push("");
+	lines.push(`# Commit search results for ${owner}/${repo}`);
+	lines.push("");
+	if (results.length === 0) {
+		lines.push("No commits found.");
+	} else {
+		for (const result of results) {
+			lines.push(`- ${result.sha.slice(0, 7)} ${formatSimpleDate(result.date)} @${result.author}: ${result.message}${result.url ? ` - ${result.url}` : ""}`);
+		}
+	}
+	return lines.join("\n");
+}
+
 export function renderGlobMarkdown(owner: string, repo: string, pattern: string, files: string[], total: number): string {
 	const lines: string[] = [];
 	lines.push("---");
