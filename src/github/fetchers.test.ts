@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments } from "./fetchers";
+import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments, searchRepoCode } from "./fetchers";
 
 function createClient() {
 	const responses: Record<string, unknown> = {
@@ -38,10 +38,22 @@ function createClient() {
 			{ name: "utils", type: "dir", path: "src/utils" },
 			{ name: "index.ts", type: "file", path: "src/index.ts" },
 		],
+		"/search/code?q=useState%20repo%3Ao%2Fr&page=1&per_page=20": {
+			items: [
+				{
+					path: "src/hooks.ts",
+					html_url: "https://github.com/o/r/blob/main/src/hooks.ts",
+					text_matches: [{ property: "content", fragment: "function useState()" }],
+				},
+			],
+		},
 	};
 
 	return {
-		ghJson: async (args: string[]) => responses[args[1]],
+		ghJson: async (args: string[]) => {
+			const key = [...args].reverse().find((arg) => arg.startsWith("/"));
+			return responses[key ?? ""];
+		},
 		ghText: async () => "",
 		fetchAllRestPages: async (path: string) => {
 			const key = `${path}?per_page=100&page=1`;
@@ -100,5 +112,12 @@ describe("fetchers", () => {
 		const entries = await fetchRepoDirectory(client, "o", "r", "src");
 		expect(entries).toHaveLength(2);
 		expect(entries[0]?.type).toBe("dir");
+	});
+
+	it("searches repository code", async () => {
+		const client = createClient() as any;
+		const results = await searchRepoCode(client, "o", "r", "useState");
+		expect(results).toHaveLength(1);
+		expect(results[0]?.path).toBe("src/hooks.ts");
 	});
 });

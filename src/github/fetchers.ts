@@ -363,6 +363,36 @@ export async function fetchRepoDirectory(
 	}));
 }
 
+export async function searchRepoCode(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	query: string,
+	path?: string,
+	page = 1,
+	perPage = 20,
+): Promise<Array<{ path: string; url?: string; snippets: string[] }>> {
+	const pathSegment = path?.trim() ? ` path:${path.trim()}` : "";
+	const q = `${query} repo:${owner}/${repo}${pathSegment}`;
+	const payload = await client.ghJson([
+		"api",
+		"-H",
+		"Accept: application/vnd.github.v3.text-match+json",
+		`/search/code?q=${encodeURIComponent(q)}&page=${page}&per_page=${perPage}`,
+	]);
+	const items = Array.isArray(payload?.items) ? payload.items : [];
+
+	return items.map((item) => ({
+		path: String(item?.path ?? ""),
+		url: typeof item?.html_url === "string" ? item.html_url : undefined,
+		snippets: Array.isArray(item?.text_matches)
+			? item.text_matches
+					.filter((m: any) => m?.property === "content" && typeof m?.fragment === "string")
+					.map((m: any) => String(m.fragment).trim())
+			: [],
+	}));
+}
+
 export async function fetchThread(
 	client: GitHubClient,
 	entity: Entity,

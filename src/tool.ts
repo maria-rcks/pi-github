@@ -5,13 +5,14 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments, fetchThread } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments, fetchThread, searchRepoCode } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
 	renderChangeMarkdown,
 	renderChangesListMarkdown,
 	renderImagesListMarkdown,
+	renderCodeSearchMarkdown,
 	renderDirectoryMarkdown,
 	renderFileMarkdown,
 	renderIssuesListMarkdown,
@@ -132,6 +133,17 @@ export default function githubExtension(pi: ExtensionAPI) {
 						typeof rawParams.ref === "string" && rawParams.ref.trim() ? rawParams.ref.trim() : undefined,
 					);
 					const text = renderDirectoryMarkdown(owner, repo, path || ".", entries);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "search_code") {
+					const query = typeof rawParams.query === "string" ? rawParams.query.trim() : "";
+					if (!query) {
+						return { content: [{ type: "text", text: "Error: query is required for action=search_code" }] };
+					}
+					const path = typeof rawParams.path === "string" && rawParams.path.trim() ? rawParams.path.trim() : undefined;
+					const results = await searchRepoCode(client, owner, repo, query, path, normalizedPage, normalizedPerPage);
+					const text = renderCodeSearchMarkdown(owner, repo, query, results);
 					return { content: [{ type: "text", text }] };
 				}
 

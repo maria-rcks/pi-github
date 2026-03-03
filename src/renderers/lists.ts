@@ -190,6 +190,36 @@ export function renderPrChecksMarkdown(owner: string, repo: string, number: numb
 	return lines.join("\n");
 }
 
+export function renderCodeSearchMarkdown(
+	owner: string,
+	repo: string,
+	query: string,
+	results: Array<{ path: string; url?: string; snippets: string[] }>,
+): string {
+	const lines: string[] = [];
+	lines.push("---");
+	lines.push(`repo: ${owner}/${repo}`);
+	lines.push(`query: ${query}`);
+	lines.push(`results: ${results.length}`);
+	lines.push("---");
+	lines.push("");
+	lines.push(`# Code search results for ${owner}/${repo}`);
+	lines.push("");
+
+	if (results.length === 0) {
+		lines.push("No results found.");
+	} else {
+		for (const [index, result] of results.entries()) {
+			lines.push(`${index + 1}. ${result.path}${result.url ? ` - ${result.url}` : ""}`);
+			for (const snippet of result.snippets.slice(0, 2)) {
+				lines.push(`   - ${snippet.replace(/\r?\n/g, " ")}`);
+			}
+		}
+	}
+
+	return lines.join("\n");
+}
+
 export function renderDirectoryMarkdown(
 	owner: string,
 	repo: string,

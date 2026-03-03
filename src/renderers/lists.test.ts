@@ -1,5 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import { renderDirectoryMarkdown, renderFileMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderCodeSearchMarkdown, renderDirectoryMarkdown, renderFileMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+
+describe("renderCodeSearchMarkdown", () => {
+	it("renders code search rows", () => {
+		const text = renderCodeSearchMarkdown("o", "r", "useState", [
+			{ path: "src/a.ts", snippets: ["const x = useState()"], url: "https://x" },
+		]);
+		expect(text).toContain("query: useState");
+		expect(text).toContain("src/a.ts");
+	});
+});
 
 describe("renderDirectoryMarkdown", () => {
 	it("renders sorted directory entries", () => {
