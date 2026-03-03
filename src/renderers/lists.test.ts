@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
 
 describe("renderReviewCommentsMarkdown", () => {
 	it("renders compact review comments", () => {
@@ -52,5 +52,24 @@ describe("renderPrChecksMarkdown", () => {
 		]);
 		expect(text).toContain("# Checks for PR o/r#1");
 		expect(text).toContain("ci: completed/success");
+	});
+});
+
+describe("renderPrOverviewMarkdown", () => {
+	it("renders aggregated PR overview", () => {
+		const text = renderPrOverviewMarkdown("o", "r", {
+			number: 2,
+			title: "Add feature",
+			state: "open",
+			draft: false,
+			author: "alice",
+			headSha: "abcdef",
+			reviewCounts: { approved: 1 },
+			checks: [{ name: "ci", status: "completed", conclusion: "success" }],
+			changes: [{ id: 1, filename: "a.ts", status: "modified", additions: 1, deletions: 0, changes: 1 }],
+		});
+		expect(text).toContain("# PR o/r#2: Add feature");
+		expect(text).toContain("approved: 1");
+		expect(text).toContain("Changed files");
 	});
 });

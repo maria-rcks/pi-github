@@ -5,7 +5,7 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchReviewComments, fetchThread } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchReviewComments, fetchThread } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
@@ -17,6 +17,7 @@ import {
 	renderPrChecksMarkdown,
 	renderPrCommitMarkdown,
 	renderPrCommitsMarkdown,
+	renderPrOverviewMarkdown,
 	renderPrsListMarkdown,
 	renderReviewCommentsMarkdown,
 } from "./renderers/lists";
@@ -184,6 +185,19 @@ export default function githubExtension(pi: ExtensionAPI) {
 					}
 					const commit = await fetchPrCommitDetail(client, owner, repo, id, commitSha);
 					const text = renderPrCommitMarkdown(owner, repo, id, commit);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "pr_overview") {
+					if (entity !== "pr") {
+						return { content: [{ type: "text", text: "Error: action=pr_overview only works for pull requests" }] };
+					}
+					const overview = await fetchPrOverview(client, owner, repo, id, {
+						includeFiles: rawParams.includeFiles !== false,
+						includeReviews: rawParams.includeReviews !== false,
+						includeChecks: rawParams.includeChecks !== false,
+					});
+					const text = renderPrOverviewMarkdown(owner, repo, overview);
 					return { content: [{ type: "text", text }] };
 				}
 

@@ -1,4 +1,4 @@
-import type { ChangeRef, Entity, PrCommitDetail, PrCommitRef, PrCheckRef, ReviewCommentRef, ThreadItem } from "../types";
+import type { ChangeRef, Entity, PrCommitDetail, PrCommitRef, PrCheckRef, PrOverview, ReviewCommentRef, ThreadItem } from "../types";
 import { safeIso, trimBody } from "../utils/text";
 import type { GitHubClient } from "./client";
 
@@ -255,6 +255,52 @@ export async function fetchPrChecks(client: GitHubClient, owner: string, repo: s
 		completedAt: safeIso(run.completed_at),
 		url: typeof run.html_url === "string" ? run.html_url : undefined,
 	}));
+}
+
+export async function fetchPrOverview(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	number: number,
+	options: { includeFiles: boolean; includeReviews: boolean; includeChecks: boolean },
+): Promise<PrOverview> {
+	const pr = await client.ghJson(["api", `/repos/${owner}/${repo}/pulls/${number}`]);
+	const headSha = String(pr?.head?.sha ?? "").trim();
+	if (!headSha) {
+		throw new Error(`Could not resolve PR head SHA for #${number}`);
+	}
+
+	const overview: PrOverview = {
+		number,
+		title: String(pr?.title ?? "(no title)"),
+		state: String(pr?.state ?? "unknown"),
+		draft: Boolean(pr?.draft),
+		author: String(pr?.user?.login ?? "unknown"),
+		baseRef: typeof pr?.base?.ref === "string" ? pr.base.ref : undefined,
+		headRef: typeof pr?.head?.ref === "string" ? pr.head.ref : undefined,
+		headSha,
+		url: typeof pr?.html_url === "string" ? pr.html_url : undefined,
+	};
+
+	if (options.includeReviews) {
+		const reviews = await client.fetchAllRestPages(`/repos/${owner}/${repo}/pulls/${number}/reviews`);
+		const counts: Record<string, number> = {};
+		for (const review of reviews) {
+			const key = String(review?.state ?? "COMMENTED").toLowerCase();
+			counts[key] = (counts[key] ?? 0) + 1;
+		}
+		overview.reviewCounts = counts;
+	}
+
+	if (options.includeChecks) {
+		overview.checks = await fetchPrChecks(client, owner, repo, headSha);
+	}
+
+	if (options.includeFiles) {
+		overview.changes = await fetchPrChanges(client, owner, repo, number);
+	}
+
+	return overview;
 }
 
 export async function fetchReviewComments(client: GitHubClient, owner: string, repo: string, number: number): Promise<ReviewCommentRef[]> {

@@ -1,4 +1,4 @@
-import type { ChangeRef, Entity, ImageRef, ParticipantRef, PrCommitDetail, PrCommitRef, ReviewCommentRef, PrCheckRef } from "../types";
+import type { ChangeRef, Entity, ImageRef, ParticipantRef, PrCheckRef, PrCommitDetail, PrCommitRef, PrOverview, ReviewCommentRef } from "../types";
 import { formatSimpleDate, safeIso } from "../utils/text";
 
 export function renderImagesListMarkdown(entity: Entity, owner: string, repo: string, number: number, images: ImageRef[]): string {
@@ -188,6 +188,68 @@ export function renderPrChecksMarkdown(owner: string, repo: string, number: numb
 	}
 
 	return lines.join("\n");
+}
+
+export function renderPrOverviewMarkdown(owner: string, repo: string, overview: PrOverview): string {
+	const lines: string[] = [];
+	lines.push("---");
+	lines.push("entity: pr");
+	lines.push(`repo: ${owner}/${repo}`);
+	lines.push(`number: ${overview.number}`);
+	lines.push(`state: ${overview.state}`);
+	lines.push(`draft: ${overview.draft}`);
+	lines.push(`head_sha: ${overview.headSha}`);
+	lines.push("---");
+	lines.push("");
+	lines.push(`# PR ${owner}/${repo}#${overview.number}: ${overview.title}`);
+	lines.push("");
+	lines.push(`- Author: @${overview.author}`);
+	lines.push(`- State: ${overview.state}${overview.draft ? " (draft)" : ""}`);
+	if (overview.baseRef || overview.headRef) {
+		lines.push(`- Branches: ${overview.headRef ?? "?"} -> ${overview.baseRef ?? "?"}`);
+	}
+	if (overview.url) lines.push(`- URL: ${overview.url}`);
+	lines.push("");
+
+	if (overview.reviewCounts) {
+		const entries = Object.entries(overview.reviewCounts).sort((a, b) => b[1] - a[1]);
+		lines.push("## Reviews");
+		if (entries.length === 0) lines.push("- No reviews yet.");
+		for (const [state, count] of entries) {
+			lines.push(`- ${state}: ${count}`);
+		}
+		lines.push("");
+	}
+
+	if (overview.checks) {
+		lines.push("## Checks");
+		if (overview.checks.length === 0) {
+			lines.push("- No check runs found.");
+		} else {
+			for (const check of overview.checks) {
+				const outcome = check.conclusion ? `${check.status}/${check.conclusion}` : check.status;
+				lines.push(`- ${check.name}: ${outcome}`);
+			}
+		}
+		lines.push("");
+	}
+
+	if (overview.changes) {
+		lines.push("## Changed files");
+		if (overview.changes.length === 0) {
+			lines.push("- No file changes.");
+		} else {
+			for (const change of overview.changes.slice(0, 20)) {
+				lines.push(`- #${change.id}: ${change.filename} (${change.status}, +${change.additions} -${change.deletions})`);
+			}
+			if (overview.changes.length > 20) {
+				lines.push(`- ... ${overview.changes.length - 20} more files`);
+			}
+		}
+		lines.push("");
+	}
+
+	return lines.join("\n").trim();
 }
 
 export function renderReviewCommentsMarkdown(owner: string, repo: string, number: number, comments: ReviewCommentRef[]): string {

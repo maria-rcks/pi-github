@@ -102,3 +102,18 @@ export type ReviewCommentRef = {
 	path?: string;
 	line?: number;
 };
+
+export type PrOverview = {
+	number: number;
+	title: string;
+	state: string;
+	draft: boolean;
+	author: string;
+	baseRef?: string;
+	headRef?: string;
+	headSha: string;
+	url?: string;
+	reviewCounts?: Record<string, number>;
+	checks?: PrCheckRef[];
+	changes?: ChangeRef[];
+};
