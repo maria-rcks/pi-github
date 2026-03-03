@@ -13,9 +13,12 @@ import {
 	renderChangesListMarkdown,
 	renderImagesListMarkdown,
 	renderIssuesListMarkdown,
+	renderParticipantsMarkdown,
 	renderPrsListMarkdown,
 } from "./renderers/lists";
+import { applyThreadFilters } from "./utils/filters";
 import { collectImages, imageExtFromUrl } from "./utils/images";
+import { collectParticipants } from "./utils/participants";
 
 export default function githubExtension(pi: ExtensionAPI) {
 	const threadCache = new ThreadCache();
@@ -116,6 +119,13 @@ export default function githubExtension(pi: ExtensionAPI) {
 
 				const entity = (rawParams.entity as Entity | undefined) ?? (await inferEntity(client, owner, repo, id));
 
+				if (action === "list_participants") {
+					const items = await fetchThreadCached(entity, owner, repo, id);
+					const participants = collectParticipants(items);
+					const text = renderParticipantsMarkdown(entity, owner, repo, id, participants);
+					return { content: [{ type: "text", text }] };
+				}
+
 				if (action === "list_images") {
 					const items = await fetchThreadCached(entity, owner, repo, id);
 					const images = collectImages(items);
@@ -171,7 +181,14 @@ export default function githubExtension(pi: ExtensionAPI) {
 				}
 
 				const items = await fetchThreadCached(entity, owner, repo, id);
-				const images = collectImages(items);
+				const filteredItems = applyThreadFilters(items, {
+					author: typeof rawParams.author === "string" ? rawParams.author : undefined,
+					kind: typeof rawParams.kind === "string" ? rawParams.kind : undefined,
+					since: typeof rawParams.since === "string" ? rawParams.since : undefined,
+					until: typeof rawParams.until === "string" ? rawParams.until : undefined,
+					contains: typeof rawParams.contains === "string" ? rawParams.contains : undefined,
+				});
+				const images = collectImages(filteredItems);
 				const changes = entity === "pr" ? await fetchPrChanges(client, owner, repo, id) : undefined;
 				const text = renderThreadMarkdown({
 					entity,
@@ -180,9 +197,10 @@ export default function githubExtension(pi: ExtensionAPI) {
 					number: id,
 					page: normalizedPage,
 					perPage: normalizedPerPage,
-					items,
+					items: filteredItems,
 					images,
 					changes,
+					filteredFromTotal: items.length,
 				});
 				return { content: [{ type: "text", text }] };
 			} catch (error) {

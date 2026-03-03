@@ -7,7 +7,13 @@ export type Action =
 	| "list_changes"
 	| "get_change"
 	| "list_issues"
-	| "list_prs";
+	| "list_prs"
+	| "pr_overview"
+	| "list_pr_commits"
+	| "get_pr_commit"
+	| "list_review_comments"
+	| "list_pr_checks"
+	| "list_participants";
 
 export type ThreadItem = {
 	kind: string;
@@ -44,4 +50,36 @@ export type ChangeRef = {
 export type RepoCoordinates = {
 	owner: string;
 	repo: string;
+};
+
+export type PrCommitRef = {
+	sha: string;
+	author: string;
+	date: string;
+	message: string;
+	url?: string;
+};
+
+export type PrCommitChange = {
+	filename: string;
+	status: string;
+	additions: number;
+	deletions: number;
+	changes: number;
+	patch?: string;
+};
+
+export type PrCheckRef = {
+	name: string;
+	status: string;
+	conclusion?: string;
+	startedAt?: string;
+	completedAt?: string;
+	url?: string;
+};
+
+export type ParticipantRef = {
+	login: string;
+	roles: Array<"author" | "reviewer" | "commenter">;
+	count: number;
 };

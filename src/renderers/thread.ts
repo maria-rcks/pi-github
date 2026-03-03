@@ -12,10 +12,11 @@ type RenderThreadParams = {
 	items: ThreadItem[];
 	images: ImageRef[];
 	changes?: ChangeRef[];
+	filteredFromTotal?: number;
 };
 
 export function renderThreadMarkdown(params: RenderThreadParams): string {
-	const { entity, owner, repo, number, page, perPage, items, images, changes } = params;
+	const { entity, owner, repo, number, page, perPage, items, images, changes, filteredFromTotal } = params;
 	const total = items.length;
 	const totalPages = Math.max(1, Math.ceil(total / perPage));
 	const normalizedPage = Math.min(Math.max(1, page), totalPages);
@@ -24,7 +25,11 @@ export function renderThreadMarkdown(params: RenderThreadParams): string {
 
 	const lines: string[] = [];
 	lines.push(`# ${entity.toUpperCase()} ${owner}/${repo}#${number}`);
-	lines.push(`(${start + 1}-${Math.min(start + perPage, total)} of ${total}, page ${normalizedPage}/${totalPages})`);
+	const rangeStart = total === 0 ? 0 : start + 1;
+	lines.push(`(${rangeStart}-${Math.min(start + perPage, total)} of ${total}, page ${normalizedPage}/${totalPages})`);
+	if (typeof filteredFromTotal === "number" && filteredFromTotal >= total && filteredFromTotal !== total) {
+		lines.push(`filtered_items: ${total} (from ${filteredFromTotal})`);
+	}
 	lines.push("");
 
 	for (const [index, item] of paged.entries()) {

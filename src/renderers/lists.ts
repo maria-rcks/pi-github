@@ -1,4 +1,4 @@
-import type { ChangeRef, Entity, ImageRef } from "../types";
+import type { ChangeRef, Entity, ImageRef, ParticipantRef } from "../types";
 import { formatSimpleDate, safeIso } from "../utils/text";
 
 export function renderImagesListMarkdown(entity: Entity, owner: string, repo: string, number: number, images: ImageRef[]): string {
@@ -105,6 +105,35 @@ export function renderPrsListMarkdown(owner: string, repo: string, page: number,
 			const draft = pr.draft ? " draft" : "";
 			const url = String(pr.html_url ?? "");
 			lines.push(`- #${number} [${state}${draft}] ${title} (@${author}, updated ${formatSimpleDate(updated)})${url ? ` - ${url}` : ""}`);
+		}
+	}
+
+	return lines.join("\n");
+}
+
+export function renderParticipantsMarkdown(
+	entity: Entity,
+	owner: string,
+	repo: string,
+	number: number,
+	participants: ParticipantRef[],
+): string {
+	const lines: string[] = [];
+	lines.push("---");
+	lines.push(`entity: ${entity}`);
+	lines.push(`repo: ${owner}/${repo}`);
+	lines.push(`number: ${number}`);
+	lines.push(`total_participants: ${participants.length}`);
+	lines.push("---");
+	lines.push("");
+	lines.push(`# Participants for ${entity.toUpperCase()} ${owner}/${repo}#${number}`);
+	lines.push("");
+
+	if (participants.length === 0) {
+		lines.push("No participants found.");
+	} else {
+		for (const participant of participants) {
+			lines.push(`- @${participant.login} (${participant.roles.join(", ")}, ${participant.count} entries)`);
 		}
 	}
 
