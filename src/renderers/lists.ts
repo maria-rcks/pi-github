@@ -190,6 +190,26 @@ export function renderPrChecksMarkdown(owner: string, repo: string, number: numb
 	return lines.join("\n");
 }
 
+export function renderFileMarkdown(owner: string, repo: string, path: string, content: string, startLine = 1, endLine?: number): string {
+	const lines = content.split("\n");
+	const startIndex = Math.max(0, startLine - 1);
+	const endIndex = typeof endLine === "number" ? Math.max(startIndex, endLine) : lines.length;
+	const selected = lines.slice(startIndex, endIndex);
+	const numbered = selected.map((line, index) => `${startLine + index}: ${line}`);
+
+	return [
+		"---",
+		`repo: ${owner}/${repo}`,
+		`path: ${path}`,
+		`lines: ${numbered.length}`,
+		"---",
+		"",
+		numbered.join("\n"),
+	]
+		.join("\n")
+		.trim();
+}
+
 export function renderPrOverviewMarkdown(owner: string, repo: string, overview: PrOverview): string {
 	const lines: string[] = [];
 	lines.push("---");

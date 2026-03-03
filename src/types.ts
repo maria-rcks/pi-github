@@ -13,7 +13,12 @@ export type Action =
 	| "get_pr_commit"
 	| "list_review_comments"
 	| "list_pr_checks"
-	| "list_participants";
+	| "list_participants"
+	| "read_file"
+	| "list_directory"
+	| "search_code"
+	| "glob_files"
+	| "search_commits";
 
 export type ThreadItem = {
 	kind: string;

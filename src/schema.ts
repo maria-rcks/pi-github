@@ -17,6 +17,11 @@ export const GithubParams = Type.Object({
 				Type.Literal("list_review_comments"),
 				Type.Literal("list_pr_checks"),
 				Type.Literal("list_participants"),
+				Type.Literal("read_file"),
+				Type.Literal("list_directory"),
+				Type.Literal("search_code"),
+				Type.Literal("glob_files"),
+				Type.Literal("search_commits"),
 			],
 			{
 				description:
@@ -49,4 +54,8 @@ export const GithubParams = Type.Object({
 	since: Type.Optional(Type.String({ description: "ISO date/time lower bound filter" })),
 	until: Type.Optional(Type.String({ description: "ISO date/time upper bound filter" })),
 	contains: Type.Optional(Type.String({ description: "Case-insensitive body substring filter" })),
+	query: Type.Optional(Type.String({ description: "Search query for action=search_code/search_commits" })),
+	filePattern: Type.Optional(Type.String({ description: "Glob pattern for action=glob_files" })),
+	limit: Type.Optional(Type.Integer({ minimum: 1, description: "Maximum results for list/search actions" })),
+	offset: Type.Optional(Type.Integer({ minimum: 0, description: "Offset for paginated list/search actions" })),
 });

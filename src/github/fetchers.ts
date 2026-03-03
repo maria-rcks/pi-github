@@ -317,6 +317,30 @@ export async function fetchReviewComments(client: GitHubClient, owner: string, r
 	}));
 }
 
+function decodeBase64(content: string): string {
+	return Buffer.from(content.replace(/\n/g, ""), "base64").toString("utf8");
+}
+
+export async function fetchRepoFile(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	path: string,
+	ref?: string,
+): Promise<string> {
+	const separator = path.includes("?") ? "&" : "?";
+	const suffix = ref ? `${separator}ref=${encodeURIComponent(ref)}` : "";
+	const payload = await client.ghJson(["api", `/repos/${owner}/${repo}/contents/${path}${suffix}`]);
+	if (Array.isArray(payload)) {
+		throw new Error(`Path ${path} is a directory, not a file`);
+	}
+
+	const encoding = String(payload?.encoding ?? "").toLowerCase();
+	const content = String(payload?.content ?? "");
+	if (encoding === "base64") return decodeBase64(content);
+	return content;
+}
+
 export async function fetchThread(
 	client: GitHubClient,
 	entity: Entity,

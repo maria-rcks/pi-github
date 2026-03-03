@@ -1,5 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderFileMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+
+describe("renderFileMarkdown", () => {
+	it("renders file content with line numbers and range", () => {
+		const text = renderFileMarkdown("o", "r", "README.md", "a\nb\nc", 2, 3);
+		expect(text).toContain("path: README.md");
+		expect(text).toContain("2: b");
+		expect(text).not.toContain("1: a");
+	});
+});
 
 describe("renderReviewCommentsMarkdown", () => {
 	it("renders compact review comments", () => {

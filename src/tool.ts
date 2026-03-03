@@ -5,13 +5,14 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchReviewComments, fetchThread } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoFile, fetchReviewComments, fetchThread } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
 	renderChangeMarkdown,
 	renderChangesListMarkdown,
 	renderImagesListMarkdown,
+	renderFileMarkdown,
 	renderIssuesListMarkdown,
 	renderParticipantsMarkdown,
 	renderPrChecksMarkdown,
@@ -95,6 +96,30 @@ export default function githubExtension(pi: ExtensionAPI) {
 
 			try {
 				const { owner, repo } = await resolveRepo(pi, rawParams.owner, rawParams.repo);
+
+				if (action === "read_file") {
+					const path = typeof rawParams.path === "string" ? rawParams.path.trim().replace(/^\//, "") : "";
+					if (!path) {
+						return { content: [{ type: "text", text: "Error: path is required for action=read_file" }] };
+					}
+					const startLine = Number(rawParams.startLine ?? 1);
+					const endLine = rawParams.endLine === undefined ? undefined : Number(rawParams.endLine);
+					if (!Number.isInteger(startLine) || startLine < 1) {
+						return { content: [{ type: "text", text: "Error: startLine must be an integer >= 1" }] };
+					}
+					if (endLine !== undefined && (!Number.isInteger(endLine) || endLine < startLine)) {
+						return { content: [{ type: "text", text: "Error: endLine must be an integer >= startLine" }] };
+					}
+					const content = await fetchRepoFile(
+						client,
+						owner,
+						repo,
+						path,
+						typeof rawParams.ref === "string" && rawParams.ref.trim() ? rawParams.ref.trim() : undefined,
+					);
+					const text = renderFileMarkdown(owner, repo, path, content, startLine, endLine);
+					return { content: [{ type: "text", text }] };
+				}
 
 				if (action === "list_issues") {
 					const rows = await client.fetchRestPage(
