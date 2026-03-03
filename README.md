@@ -40,12 +40,19 @@ pi install /absolute/path/to/pi-github
 Tool name: `github`
 
 - `format` (default)
+  - optional filters: `author`, `kind`, `since`, `until`, `contains`
 - `list_issues`
 - `list_prs`
 - `list_images`
 - `download_image`
 - `list_changes` (PR only)
 - `get_change` (PR only)
+- `list_participants`
+- `list_review_comments` (PR only, supports `author`/`path`/`since`/`until` filters)
+- `list_pr_commits` (PR only)
+- `get_pr_commit` (PR only, requires `commitSha`)
+- `list_pr_checks` (PR only)
+- `pr_overview` (PR only, optional `includeFiles`/`includeReviews`/`includeChecks`)
 
 Core params:
 
