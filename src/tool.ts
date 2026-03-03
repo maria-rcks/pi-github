@@ -187,6 +187,20 @@ export default function githubExtension(pi: ExtensionAPI) {
 					return { content: [{ type: "text", text }] };
 				}
 
+				if (action === "list_pr_checks") {
+					if (entity !== "pr") {
+						return { content: [{ type: "text", text: "Error: action=list_pr_checks only works for pull requests" }] };
+					}
+					const pr = await client.ghJson(["api", `/repos/${owner}/${repo}/pulls/${id}`]);
+					const headSha = String(pr?.head?.sha ?? "").trim();
+					if (!headSha) {
+						throw new Error(`Could not resolve PR head SHA for #${id}`);
+					}
+					const checks = await fetchPrChecks(client, owner, repo, headSha);
+					const text = renderPrChecksMarkdown(owner, repo, id, checks);
+					return { content: [{ type: "text", text }] };
+				}
+
 				if (action === "list_review_comments") {
 					if (entity !== "pr") {
 						return { content: [{ type: "text", text: "Error: action=list_review_comments only works for pull requests" }] };

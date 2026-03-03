@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { renderPrCommitMarkdown, renderPrCommitsMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderReviewCommentsMarkdown } from "./lists";
 
 describe("renderReviewCommentsMarkdown", () => {
 	it("renders compact review comments", () => {
@@ -42,5 +42,15 @@ describe("renderPrCommitMarkdown", () => {
 		});
 		expect(text).toContain("# Commit abcdef1 for PR o/r#1");
 		expect(text).toContain("```diff");
+	});
+});
+
+describe("renderPrChecksMarkdown", () => {
+	it("renders check status lines", () => {
+		const text = renderPrChecksMarkdown("o", "r", 1, [
+			{ name: "ci", status: "completed", conclusion: "success", url: "https://x" },
+		]);
+		expect(text).toContain("# Checks for PR o/r#1");
+		expect(text).toContain("ci: completed/success");
 	});
 });
