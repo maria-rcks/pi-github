@@ -1,4 +1,4 @@
-import type { ChangeRef, Entity, ThreadItem } from "../types";
+import type { ChangeRef, Entity, ReviewCommentRef, ThreadItem } from "../types";
 import { safeIso, trimBody } from "../utils/text";
 import type { GitHubClient } from "./client";
 
@@ -198,6 +198,20 @@ export async function fetchPrChanges(client: GitHubClient, owner: string, repo: 
 		blobUrl: typeof file.blob_url === "string" ? file.blob_url : undefined,
 		rawUrl: typeof file.raw_url === "string" ? file.raw_url : undefined,
 		previousFilename: typeof file.previous_filename === "string" ? file.previous_filename : undefined,
+	}));
+}
+
+export async function fetchReviewComments(client: GitHubClient, owner: string, repo: string, number: number): Promise<ReviewCommentRef[]> {
+	const comments = await client.fetchAllRestPages(`/repos/${owner}/${repo}/pulls/${number}/comments`);
+	let id = 1;
+	return comments.map((comment) => ({
+		id: id++,
+		author: comment.user?.login ?? "unknown",
+		body: trimBody(comment.body),
+		createdAt: safeIso(comment.created_at),
+		url: typeof comment.html_url === "string" ? comment.html_url : undefined,
+		path: typeof comment.path === "string" ? comment.path : undefined,
+		line: typeof comment.line === "number" ? comment.line : undefined,
 	}));
 }
 

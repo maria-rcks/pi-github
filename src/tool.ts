@@ -5,7 +5,7 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchThread } from "./github/fetchers";
+import { fetchPrChanges, fetchReviewComments, fetchThread } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
@@ -15,6 +15,7 @@ import {
 	renderIssuesListMarkdown,
 	renderParticipantsMarkdown,
 	renderPrsListMarkdown,
+	renderReviewCommentsMarkdown,
 } from "./renderers/lists";
 import { applyThreadFilters } from "./utils/filters";
 import { collectImages, imageExtFromUrl } from "./utils/images";
@@ -157,6 +158,34 @@ export default function githubExtension(pi: ExtensionAPI) {
 					}
 					const changes = await fetchPrChanges(client, owner, repo, id);
 					const text = renderChangesListMarkdown(owner, repo, id, changes);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "list_review_comments") {
+					if (entity !== "pr") {
+						return { content: [{ type: "text", text: "Error: action=list_review_comments only works for pull requests" }] };
+					}
+					const allComments = await fetchReviewComments(client, owner, repo, id);
+					const authorFilter = typeof rawParams.author === "string" ? rawParams.author.trim().toLowerCase() : "";
+					const pathFilter = typeof rawParams.path === "string" ? rawParams.path.trim() : "";
+					const sinceMs = typeof rawParams.since === "string" ? Date.parse(rawParams.since) : NaN;
+					const untilMs = typeof rawParams.until === "string" ? Date.parse(rawParams.until) : NaN;
+
+					const filtered = allComments.filter((comment) => {
+						if (authorFilter && comment.author.toLowerCase() !== authorFilter) return false;
+						if (pathFilter && comment.path !== pathFilter) return false;
+						if (Number.isFinite(sinceMs) || Number.isFinite(untilMs)) {
+							const createdMs = Date.parse(comment.createdAt);
+							if (!Number.isFinite(createdMs)) return false;
+							if (Number.isFinite(sinceMs) && createdMs < sinceMs) return false;
+							if (Number.isFinite(untilMs) && createdMs > untilMs) return false;
+						}
+						return true;
+					});
+
+					const start = (normalizedPage - 1) * normalizedPerPage;
+					const pageComments = filtered.slice(start, start + normalizedPerPage);
+					const text = renderReviewCommentsMarkdown(owner, repo, id, pageComments);
 					return { content: [{ type: "text", text }] };
 				}
 

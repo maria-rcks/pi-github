@@ -1,4 +1,4 @@
-import type { ChangeRef, Entity, ImageRef, ParticipantRef } from "../types";
+import type { ChangeRef, Entity, ImageRef, ParticipantRef, ReviewCommentRef } from "../types";
 import { formatSimpleDate, safeIso } from "../utils/text";
 
 export function renderImagesListMarkdown(entity: Entity, owner: string, repo: string, number: number, images: ImageRef[]): string {
@@ -105,6 +105,34 @@ export function renderPrsListMarkdown(owner: string, repo: string, page: number,
 			const draft = pr.draft ? " draft" : "";
 			const url = String(pr.html_url ?? "");
 			lines.push(`- #${number} [${state}${draft}] ${title} (@${author}, updated ${formatSimpleDate(updated)})${url ? ` - ${url}` : ""}`);
+		}
+	}
+
+	return lines.join("\n");
+}
+
+export function renderReviewCommentsMarkdown(owner: string, repo: string, number: number, comments: ReviewCommentRef[]): string {
+	const lines: string[] = [];
+	lines.push("---");
+	lines.push("entity: pr");
+	lines.push(`repo: ${owner}/${repo}`);
+	lines.push(`number: ${number}`);
+	lines.push(`total_review_comments: ${comments.length}`);
+	lines.push("---");
+	lines.push("");
+	lines.push(`# Review comments for PR ${owner}/${repo}#${number}`);
+	lines.push("");
+
+	if (comments.length === 0) {
+		lines.push("No review comments found.");
+	} else {
+		for (const comment of comments) {
+			const location = comment.path ? `${comment.path}${typeof comment.line === "number" ? `:${comment.line}` : ""}` : "unknown";
+			const body = comment.body.replace(/\r?\n/g, " ").trim();
+			const compactBody = body.length > 120 ? `${body.slice(0, 117)}...` : body;
+			lines.push(
+				`- #${comment.id} @${comment.author} (${formatSimpleDate(comment.createdAt)}) [${location}] ${compactBody}${comment.url ? ` - ${comment.url}` : ""}`,
+			);
 		}
 	}
 

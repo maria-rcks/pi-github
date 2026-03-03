@@ -83,3 +83,13 @@ export type ParticipantRef = {
 	roles: Array<"author" | "reviewer" | "commenter">;
 	count: number;
 };
+
+export type ReviewCommentRef = {
+	id: number;
+	author: string;
+	body: string;
+	createdAt: string;
+	url?: string;
+	path?: string;
+	line?: number;
+};
