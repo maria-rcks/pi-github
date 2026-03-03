@@ -1,5 +1,16 @@
 import { describe, expect, it } from "bun:test";
-import { renderFileMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+import { renderDirectoryMarkdown, renderFileMarkdown, renderPrChecksMarkdown, renderPrCommitMarkdown, renderPrCommitsMarkdown, renderPrOverviewMarkdown, renderReviewCommentsMarkdown } from "./lists";
+
+describe("renderDirectoryMarkdown", () => {
+	it("renders sorted directory entries", () => {
+		const text = renderDirectoryMarkdown("o", "r", "src", [
+			{ name: "z.ts", type: "file", path: "src/z.ts" },
+			{ name: "a", type: "dir", path: "src/a" },
+		]);
+		expect(text).toContain("path: src");
+		expect(text.indexOf("[dir] src/a")).toBeLessThan(text.indexOf("[file] src/z.ts"));
+	});
+});
 
 describe("renderFileMarkdown", () => {
 	it("renders file content with line numbers and range", () => {

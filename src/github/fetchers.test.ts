@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoFile, fetchReviewComments } from "./fetchers";
+import { fetchPrChecks, fetchPrCommitDetail, fetchPrCommits, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments } from "./fetchers";
 
 function createClient() {
 	const responses: Record<string, unknown> = {
@@ -34,6 +34,10 @@ function createClient() {
 		"/repos/o/r/pulls/1/files?per_page=100&page=1": [{ filename: "src/a.ts", status: "modified", additions: 1, deletions: 0, changes: 1, patch: "+x" }],
 		"/repos/o/r/pulls/1/comments?per_page=100&page=1": [{ user: { login: "bob" }, body: "nit", created_at: "2025-01-02T00:00:00Z", path: "src/a.ts", line: 10 }],
 		"/repos/o/r/contents/README.md": { encoding: "base64", content: "bGluZTEKbGluZTI=" },
+		"/repos/o/r/contents/src": [
+			{ name: "utils", type: "dir", path: "src/utils" },
+			{ name: "index.ts", type: "file", path: "src/index.ts" },
+		],
 	};
 
 	return {
@@ -89,5 +93,12 @@ describe("fetchers", () => {
 		const client = createClient() as any;
 		const content = await fetchRepoFile(client, "o", "r", "README.md");
 		expect(content).toBe("line1\nline2");
+	});
+
+	it("fetches repository directory entries", async () => {
+		const client = createClient() as any;
+		const entries = await fetchRepoDirectory(client, "o", "r", "src");
+		expect(entries).toHaveLength(2);
+		expect(entries[0]?.type).toBe("dir");
 	});
 });

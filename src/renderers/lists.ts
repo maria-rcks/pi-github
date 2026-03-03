@@ -190,6 +190,31 @@ export function renderPrChecksMarkdown(owner: string, repo: string, number: numb
 	return lines.join("\n");
 }
 
+export function renderDirectoryMarkdown(
+	owner: string,
+	repo: string,
+	path: string,
+	entries: Array<{ name: string; type: "file" | "dir"; path: string }>,
+): string {
+	const sorted = [...entries].sort((a, b) => {
+		if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
+		return a.name.localeCompare(b.name);
+	});
+	const lines = sorted.map((entry) => `${entry.type === "dir" ? "[dir]" : "[file]"} ${entry.path || entry.name}`);
+
+	return [
+		"---",
+		`repo: ${owner}/${repo}`,
+		`path: ${path || "."}`,
+		`entries: ${entries.length}`,
+		"---",
+		"",
+		lines.length > 0 ? lines.join("\n") : "(empty directory)",
+	]
+		.join("\n")
+		.trim();
+}
+
 export function renderFileMarkdown(owner: string, repo: string, path: string, content: string, startLine = 1, endLine?: number): string {
 	const lines = content.split("\n");
 	const startIndex = Math.max(0, startLine - 1);

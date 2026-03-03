@@ -341,6 +341,28 @@ export async function fetchRepoFile(
 	return content;
 }
 
+export async function fetchRepoDirectory(
+	client: GitHubClient,
+	owner: string,
+	repo: string,
+	path: string,
+	ref?: string,
+): Promise<Array<{ name: string; type: "file" | "dir"; path: string }>> {
+	const normalizedPath = path.trim().replace(/^\//, "");
+	const separator = normalizedPath.includes("?") ? "&" : "?";
+	const suffix = ref ? `${separator}ref=${encodeURIComponent(ref)}` : "";
+	const payload = await client.ghJson(["api", `/repos/${owner}/${repo}/contents/${normalizedPath}${suffix}`]);
+	if (!Array.isArray(payload)) {
+		throw new Error(`Path ${normalizedPath || "."} is not a directory`);
+	}
+
+	return payload.map((item) => ({
+		name: String(item?.name ?? "unknown"),
+		type: item?.type === "dir" ? "dir" : "file",
+		path: String(item?.path ?? ""),
+	}));
+}
+
 export async function fetchThread(
 	client: GitHubClient,
 	entity: Entity,

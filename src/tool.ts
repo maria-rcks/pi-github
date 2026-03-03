@@ -5,13 +5,14 @@ import { GithubParams } from "./schema";
 import type { Action, Entity } from "./types";
 import { ThreadCache } from "./cache/thread-cache";
 import { createGitHubClient } from "./github/client";
-import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoFile, fetchReviewComments, fetchThread } from "./github/fetchers";
+import { fetchPrChanges, fetchPrCommitDetail, fetchPrCommits, fetchPrChecks, fetchPrOverview, fetchRepoDirectory, fetchRepoFile, fetchReviewComments, fetchThread } from "./github/fetchers";
 import { inferEntity, resolveRepo } from "./github/repo";
 import { renderThreadMarkdown } from "./renderers/thread";
 import {
 	renderChangeMarkdown,
 	renderChangesListMarkdown,
 	renderImagesListMarkdown,
+	renderDirectoryMarkdown,
 	renderFileMarkdown,
 	renderIssuesListMarkdown,
 	renderParticipantsMarkdown,
@@ -118,6 +119,19 @@ export default function githubExtension(pi: ExtensionAPI) {
 						typeof rawParams.ref === "string" && rawParams.ref.trim() ? rawParams.ref.trim() : undefined,
 					);
 					const text = renderFileMarkdown(owner, repo, path, content, startLine, endLine);
+					return { content: [{ type: "text", text }] };
+				}
+
+				if (action === "list_directory") {
+					const path = typeof rawParams.path === "string" ? rawParams.path.trim().replace(/^\//, "") : "";
+					const entries = await fetchRepoDirectory(
+						client,
+						owner,
+						repo,
+						path,
+						typeof rawParams.ref === "string" && rawParams.ref.trim() ? rawParams.ref.trim() : undefined,
+					);
+					const text = renderDirectoryMarkdown(owner, repo, path || ".", entries);
 					return { content: [{ type: "text", text }] };
 				}
 
